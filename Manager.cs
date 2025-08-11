@@ -30,25 +30,25 @@ namespace yt_downloaders
             return videoInfo;
         }
 
-        public async Task<List<string>> GetAvailableResolutionsAsync(string url)
+        public async Task<List<string>> getAvailableResolutionsAsync(string url)
         {
             var videoInfo = await getVideoInfo(url);
             return videoInfo.getAvailableResolutions();
         }
 
-        public async Task<string> GetHighestQualityResolutionAsync(string url)
+        public async Task<string> getHighestQualityResolutionAsync(string url)
         {
             var videoInfo = await getVideoInfo(url);
             return videoInfo.getHighestQualityResolution();
         }
 
-        public async Task<List<string>> GetAvailableFormatsAsync(string url)
+        public async Task<List<string>> getAvailableFormatsAsync(string url)
         {
             var videoInfo = await getVideoInfo(url);
             return videoInfo.getAvailableFormats();
         }
 
-        public async Task<List<string>> GetAvailableCodecsAsync(string url)
+        public async Task<List<string>> getAvailableCodecsAsync(string url)
         {
             var videoInfo = await getVideoInfo(url);
             return videoInfo.getAvailableCodecs();
