@@ -14,6 +14,8 @@ namespace yt_downloaders
     {
         public string defaultTitle = null;
         public string fetchedURL = null;
+        public Dictionary<string, string> codecNames = null;
+        public Dictionary<string, string> resolutionNames = null;
 
         private infoFetcher _fetcher = new infoFetcher();
 
@@ -41,6 +43,8 @@ namespace yt_downloaders
             dropdownFormat.Enabled = false;
             dropdownCodec.Enabled = false;
             inputURL.Enabled = true;
+            codecNames = new Dictionary<string, string>();
+
             statusWaiting.Select();
         }
 
@@ -67,7 +71,7 @@ namespace yt_downloaders
             }
         }
 
-        private string SimplifyCodecName(string codec)
+        private string simplifyCodecName(string codec)
         {
             if (codec.StartsWith("avc1.64")) return "H.264 (High Quality)";
             else if (codec.StartsWith("avc1.4D")) return "H.264 (Standard)";
@@ -135,7 +139,7 @@ namespace yt_downloaders
                             dropdownQuality.Items.Clear();
                             dropdownFormat.Items.Clear();
                             dropdownCodec.Items.Clear();
-
+                            codecNames.Clear();
 
                             string formattedURL = url.Trim().Replace("https://www.youtube.com/", string.Empty);
                             Text = defaultTitle + " - fetching " + formattedURL;
@@ -186,12 +190,15 @@ namespace yt_downloaders
                             dropdownQuality.Items.AddRange(videoInfo.getAvailableResolutions().ToArray());
                             dropdownFormat.Items.AddRange(videoInfo.getAvailableFormats().ToArray());
 
+                            var codecInfos = videoInfo.getAvailableCodecs();
                             foreach (string codec in videoInfo.getAvailableCodecs())
                             {
-                                string simplifiedCodec = SimplifyCodecName(codec);
+                                string originalCodec = codec;
+                                string simplifiedCodec = simplifyCodecName(codec);
                                 if (simplifiedCodec != null && !dropdownCodec.Items.Contains(simplifiedCodec))
                                 {
                                     dropdownCodec.Items.Add(simplifiedCodec);
+                                    codecNames.Add(simplifiedCodec, originalCodec);
                                 }
                             }
 
@@ -209,10 +216,7 @@ namespace yt_downloaders
                             titleStrip.SetToolTip(statusTitle, videoInfo.Title);
                             statusTitle.Tag = fetchedURL;
                         }
-                        catch (Exception ex)
-                        {
-                            //
-                        }
+                        catch (Exception ex){}
                     }
                 }
             }
@@ -220,128 +224,146 @@ namespace yt_downloaders
 
         private async void btnDownload_Click(object sender, EventArgs e)
         {
+            string downloadsPath = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+            string formattedURL = fetchedURL.Trim().Replace("https://www.youtube.com/", string.Empty);
+            string videoNameTrimmed = statusTitle.Text;
+            string videoName = $"{videoNameTrimmed}.%(ext)s";
+            Text = defaultTitle + " - downloading " + formattedURL;
+
+            string ytdlp_arg = null;
+
+            string fullPathMP4 = Path.Join(downloadsPath, videoNameTrimmed + ".mp4");
+            string fullPathWEBM = Path.Join(downloadsPath, videoNameTrimmed + ".webm");
+            string fullPathMKV = Path.Join(downloadsPath, videoNameTrimmed + ".mkv");
+            string fullPathMOV = Path.Join(downloadsPath, videoNameTrimmed + ".mov");
+
+            // checking most common video extensions to
+            // detect whether the video the user is about
+            // to download already exists on disk
+
+            bool fullPathMP4Exists = File.Exists(fullPathMP4);
+            bool fullPathWEBMExists = File.Exists(fullPathWEBM);
+            bool fullPathMKVExists = File.Exists(fullPathMKV);
+            bool fullPathMOVExists = File.Exists(fullPathMOV);
+
+            if (fullPathMP4Exists)
+            {
+                if (MessageBox.Show("\"" + videoNameTrimmed + ".mp4\" already exists on disk, do you want to overwrite it?", Text, MessageBoxButtons.YesNo) == DialogResult.No)
+                {
+                    return; // user chose to not overwrite the file on disk
+                }
+            }
+            if (fullPathWEBMExists)
+            {
+                if (MessageBox.Show("\"" + videoNameTrimmed + ".webm\" already exists on disk, do you want to overwrite it?", Text, MessageBoxButtons.YesNo) == DialogResult.No)
+                {
+                    return; // user chose to not overwrite the file on disk
+                }
+            }
+            if (fullPathMKVExists)
+            {
+                if (MessageBox.Show("\"" + videoNameTrimmed + ".mkv\" already exists on disk, do you want to overwrite it?", Text, MessageBoxButtons.YesNo) == DialogResult.No)
+                {
+                    return; // user chose to not overwrite the file on disk
+                }
+            }
+            if (fullPathMOVExists)
+            {
+                if (MessageBox.Show("\"" + videoNameTrimmed + ".mov\" already exists on disk, do you want to overwrite it?", Text, MessageBoxButtons.YesNo) == DialogResult.No)
+                {
+                    return; // user chose to not overwrite the file on disk
+                }
+            }
+
+            statusWaiting.Visible = true;
+            statusWaiting.Text = "Starting download, please wait";
+            statusWaiting.BackColor = Color.Silver;
+
             if (chkHighestAvailableSettings.Checked)
             {
                 string formatOption = "-f \"bestvideo+bestaudio/best\"";
-                string downloadsPath = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
-
-                string videoNameTrimmed = statusTitle.Text;
-                string videoName = $"{videoNameTrimmed}.%(ext)s";
-                string args = $"{formatOption} -o \"{downloadsPath}\\{videoName}\" \"{fetchedURL}\"";
-
-                string formattedURL = fetchedURL.Trim().Replace("https://www.youtube.com/", string.Empty);
-                Text = defaultTitle + " - downloading " + formattedURL;
-
-                string fullPathMP4 = Path.Join(downloadsPath, videoNameTrimmed + ".mp4");
-                string fullPathWEBM = Path.Join(downloadsPath, videoNameTrimmed + ".webm");
-                string fullPathMKV = Path.Join(downloadsPath, videoNameTrimmed + ".mkv");
-                string fullPathMOV = Path.Join(downloadsPath, videoNameTrimmed + ".mov");
-
-                // checking most common video extensions to
-                // detect whether the video the user is about
-                // to download already exists on disk
-
-                bool fullPathMP4Exists = File.Exists(fullPathMP4);
-                bool fullPathWEBMExists = File.Exists(fullPathWEBM);
-                bool fullPathMKVExists = File.Exists(fullPathMKV);
-                bool fullPathMOVExists = File.Exists(fullPathMOV);
-
-                if (fullPathMP4Exists)
-                {
-                    if (MessageBox.Show("\"" + videoNameTrimmed + ".mp4\" already exists on disk, do you want to overwrite it?", Text, MessageBoxButtons.YesNo) == DialogResult.No)
-                    {
-                        return; // user chose to not overwrite the file on disk
-                    }
-                }
-
-                if (fullPathWEBMExists)
-                {
-                    if (MessageBox.Show("\"" + videoNameTrimmed + ".webm\" already exists on disk, do you want to overwrite it?", Text, MessageBoxButtons.YesNo) == DialogResult.No)
-                    {
-                        return; // user chose to not overwrite the file on disk
-                    }
-                }
-
-                if (fullPathMKVExists)
-                {
-                    if (MessageBox.Show("\"" + videoNameTrimmed + ".mkv\" already exists on disk, do you want to overwrite it?", Text, MessageBoxButtons.YesNo) == DialogResult.No)
-                    {
-                        return; // user chose to not overwrite the file on disk
-                    }
-                }
-
-                if (fullPathMOVExists)
-                {
-                    if (MessageBox.Show("\"" + videoNameTrimmed + ".mov\" already exists on disk, do you want to overwrite it?", Text, MessageBoxButtons.YesNo) == DialogResult.No)
-                    {
-                        return; // user chose to not overwrite the file on disk
-                    }
-                }
-
-                statusWaiting.Visible = true;
-                statusWaiting.Text = "Starting download, please wait";
-                statusWaiting.BackColor = Color.Silver;
-
-                await Task.Run(() =>
-                {
-                    using (var process = new Process())
-                    {
-                        process.StartInfo.FileName = "yt-dlp";
-                        process.StartInfo.Arguments = args;
-                        process.StartInfo.UseShellExecute = false;
-                        process.StartInfo.RedirectStandardOutput = true;
-                        process.StartInfo.RedirectStandardError = true;
-                        process.StartInfo.CreateNoWindow = true;
-
-                        process.OutputDataReceived += (s, ev) =>
-                        {
-                            if (!string.IsNullOrEmpty(ev.Data) && ev.Data.Contains("[download]"))
-                            {
-                                this.Invoke((MethodInvoker)(() =>
-                                {
-                                    statusWaiting.Text = ev.Data; // update status with live progress
-                                    statusWaiting.BackColor = Color.Silver;
-                                }));
-                            }
-                        };
-
-                        process.ErrorDataReceived += (s, ev) =>
-                        {
-                            if (!string.IsNullOrEmpty(ev.Data))
-                            {
-                                this.Invoke((MethodInvoker)(() =>
-                                {
-                                    statusWaiting.Text = "Error: " + ev.Data;
-                                    statusWaiting.BackColor = Color.DodgerBlue;
-                                }));
-                            }
-                        };
-
-                        process.Start();
-                        process.BeginOutputReadLine();
-                        process.BeginErrorReadLine();
-                        process.WaitForExit();
-                    }
-                });
-
-                statusWaiting.Text = "Download complete!";
-                statusWaiting.BackColor = Color.MediumSeaGreen;
-
-                if (chkOpenFolderOnFinish.Checked)
-                {
-                    try
-                    {
-                        Process.Start("explorer.exe", downloadsPath);
-                    }
-                    catch (Exception ex)
-                    {
-                        //
-                    }
-                }
+                ytdlp_arg = $"{formatOption} -o \"{downloadsPath}\\{videoName}\" \"{fetchedURL}\"";
             }
             else
             {
-                MessageBox.Show("Customizable options have not been implemented yet, it will come soon", Text, MessageBoxButtons.OK);
+                if (dropdownCodec.Items.Count > -1)
+                {
+                    if (dropdownCodec.SelectedItem != null)
+                    {
+                        var selectedCodecInfo = (CodecInformation)dropdownCodec.SelectedItem;
+                        if (selectedCodecInfo == null)
+                        {
+                            MessageBox.Show("Please select a codec before downloading.", Text, MessageBoxButtons.OK);
+                            return;
+                        }
+
+                        string? preferredExt = dropdownQuality.SelectedItem?.ToString();
+                        string? preferredFormat = dropdownFormat.SelectedItem?.ToString();
+
+                        if (preferredExt != null && preferredFormat != null)
+                        {
+                            string? maxHeight = preferredFormat.Replace("p", string.Empty);
+                            string audioExt = preferredFormat;
+
+                            string originalCodecName = selectedCodecInfo.originalName;
+                            ytdlp_arg = $"-f \"bestvideo[vcodec^={originalCodecName}][ext={preferredExt}][height<={maxHeight}]+bestaudio[ext={audioExt}]\" -o \"{downloadsPath}\\{videoName}\" \"{fetchedURL}\"";
+                        }
+                    }
+                }
+            }
+
+            await Task.Run(() =>
+            {
+                using (var process = new Process())
+                {
+                    process.StartInfo.FileName = "yt-dlp";
+                    process.StartInfo.Arguments = ytdlp_arg;
+                    process.StartInfo.UseShellExecute = false;
+                    process.StartInfo.RedirectStandardOutput = true;
+                    process.StartInfo.RedirectStandardError = true;
+                    process.StartInfo.CreateNoWindow = true;
+
+                    process.OutputDataReceived += (s, ev) =>
+                    {
+                        if (!string.IsNullOrEmpty(ev.Data) && ev.Data.Contains("[download]"))
+                        {
+                            this.Invoke((MethodInvoker)(() =>
+                            {
+                                statusWaiting.Text = ev.Data; // update status with live progress
+                                statusWaiting.BackColor = Color.Silver;
+                            }));
+                        }
+                    };
+
+                    process.ErrorDataReceived += (s, ev) =>
+                    {
+                        if (!string.IsNullOrEmpty(ev.Data))
+                        {
+                            this.Invoke((MethodInvoker)(() =>
+                            {
+                                statusWaiting.Text = "Error: " + ev.Data;
+                                statusWaiting.BackColor = Color.LightCoral;
+                            }));
+                        }
+                    };
+
+                    process.Start();
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+                    process.WaitForExit();
+                }
+            });
+
+            statusWaiting.Text = "Download complete!";
+            statusWaiting.BackColor = Color.MediumSeaGreen;
+
+            if (chkOpenFolderOnFinish.Checked)
+            {
+                try
+                {
+                    Process.Start("explorer.exe", downloadsPath);
+                }
+                catch (Exception ex){}
             }
         }
 

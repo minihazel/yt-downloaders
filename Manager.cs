@@ -172,6 +172,28 @@ namespace yt_downloaders
             }
         }
 
+        public class CodecInformation
+        {
+            public string originalName { get; set; }
+            public string displayName { get; set; }
+            public CodecInformation(string original)
+            {
+                originalName = original;
+                displayName = simplifyCodecName(original) ?? original;
+            }
+
+            public override string ToString() => displayName;
+
+            private string simplifyCodecName(string codec)
+            {
+                if (codec.StartsWith("avc1.64")) return "H.264 (High Quality)";
+                else if (codec.StartsWith("avc1.4D")) return "H.264 (Standard)";
+                else if (codec.StartsWith("avc1.42")) return "H.264 (Compatible)";
+                else if (codec.StartsWith("vp09")) return "VP9 (Best Quality)";
+                else return null;
+            }
+        }
+
         public class VideoInfo
         {
             public string Title { get; set; }
