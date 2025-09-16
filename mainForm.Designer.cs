@@ -54,6 +54,7 @@
             statusVideoTitle = new Label();
             chkOpenFolderOnFinish = new CheckBox();
             panelDownload = new Panel();
+            chkCloseAppOnFinish = new CheckBox();
             groupBox1.SuspendLayout();
             panelInputURLColorBar.SuspendLayout();
             panelInputURL.SuspendLayout();
@@ -270,7 +271,7 @@
             statusTitle.Font = new Font("Bahnschrift Light", 9F);
             statusTitle.Location = new Point(13, 40);
             statusTitle.Name = "statusTitle";
-            statusTitle.Size = new Size(383, 55);
+            statusTitle.Size = new Size(270, 55);
             statusTitle.TabIndex = 4;
             statusTitle.TextAlign = ContentAlignment.MiddleLeft;
             statusTitle.Click += statusTitle_Click;
@@ -298,6 +299,7 @@
             chkOpenFolderOnFinish.Checked = true;
             chkOpenFolderOnFinish.CheckState = CheckState.Checked;
             chkOpenFolderOnFinish.Cursor = Cursors.Hand;
+            chkOpenFolderOnFinish.Font = new Font("Bahnschrift Light", 9F);
             chkOpenFolderOnFinish.Location = new Point(402, 3);
             chkOpenFolderOnFinish.Name = "chkOpenFolderOnFinish";
             chkOpenFolderOnFinish.Size = new Size(182, 41);
@@ -308,6 +310,7 @@
             // 
             // panelDownload
             // 
+            panelDownload.Controls.Add(chkCloseAppOnFinish);
             panelDownload.Controls.Add(statusVideoTitle);
             panelDownload.Controls.Add(chkOpenFolderOnFinish);
             panelDownload.Controls.Add(btnDownload);
@@ -317,6 +320,19 @@
             panelDownload.Size = new Size(598, 98);
             panelDownload.TabIndex = 7;
             panelDownload.Visible = false;
+            // 
+            // chkCloseAppOnFinish
+            // 
+            chkCloseAppOnFinish.CheckAlign = ContentAlignment.MiddleRight;
+            chkCloseAppOnFinish.Cursor = Cursors.Hand;
+            chkCloseAppOnFinish.Font = new Font("Bahnschrift Light", 9F);
+            chkCloseAppOnFinish.Location = new Point(295, 3);
+            chkCloseAppOnFinish.Name = "chkCloseAppOnFinish";
+            chkCloseAppOnFinish.Size = new Size(101, 41);
+            chkCloseAppOnFinish.TabIndex = 7;
+            chkCloseAppOnFinish.Text = "Close app on finish";
+            chkCloseAppOnFinish.TextAlign = ContentAlignment.MiddleCenter;
+            chkCloseAppOnFinish.UseVisualStyleBackColor = true;
             // 
             // mainForm
             // 
@@ -376,5 +392,6 @@
         private Label statusVideoTitle;
         private CheckBox chkOpenFolderOnFinish;
         private Panel panelDownload;
+        private CheckBox chkCloseAppOnFinish;
     }
 }

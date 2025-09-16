@@ -80,6 +80,107 @@ namespace yt_downloaders
             else return null;
         }
 
+        private async void previewFetch(string url)
+        {
+            if (!string.IsNullOrEmpty(url))
+            {
+                if (!url.StartsWith("https://www.youtube.com/"))
+                {
+                    MessageBox.Show("Please input a valid YouTube link.", Text, MessageBoxButtons.OK);
+                }
+                else
+                {
+                    try
+                    {
+                        // clear and reset controls before fetching
+                        fetchedURL = url;
+
+                        inputURL.Clear();
+                        dropdownQuality.Items.Clear();
+                        dropdownFormat.Items.Clear();
+                        dropdownCodec.Items.Clear();
+                        codecNames.Clear();
+
+                        string formattedURL = url.Trim().Replace("https://www.youtube.com/", string.Empty);
+                        Text = defaultTitle + " - fetching " + formattedURL;
+                        chkHighestAvailableSettings.Enabled = false;
+                        dropdownQuality.Enabled = false;
+                        dropdownFormat.Enabled = false;
+                        dropdownCodec.Enabled = false;
+                        statusVideoTitle.Visible = false;
+                        panelDownload.Visible = false;
+                        statusWaiting.Visible = true;
+
+                        statusWaiting.Text = "Fetching from URL, please wait";
+                        statusWaiting.BackColor = Color.Silver;
+
+                        youTubeManager _manager = new youTubeManager();
+                        var videoInfo = await _manager.getVideoInfo(url);
+                        if (videoInfo == null)
+                        {
+                            MessageBox.Show("Invalid link provided, please try another one.", Text, MessageBoxButtons.OK);
+                            inputURL.Text = fetchedURL; // restore the input URL if it errors out
+                            return;
+                        }
+
+                        // fetch success
+
+                        Text = defaultTitle + " - previewing " + formattedURL;
+                        chkHighestAvailableSettings.Enabled = true;
+
+                        if (chkHighestAvailableSettings.Checked)
+                        {
+                            dropdownQuality.Enabled = false;
+                            dropdownFormat.Enabled = false;
+                            dropdownCodec.Enabled = false;
+                        }
+                        else
+                        {
+                            dropdownQuality.Enabled = true;
+                            dropdownFormat.Enabled = true;
+                            dropdownCodec.Enabled = true;
+                        }
+
+                        statusVideoTitle.Visible = true;
+                        panelDownload.Visible = true;
+
+                        statusWaiting.Text = "Fetch success, waiting to download";
+                        statusWaiting.BackColor = Color.Silver;
+
+                        dropdownQuality.Items.AddRange(videoInfo.getAvailableResolutions().ToArray());
+                        dropdownFormat.Items.AddRange(videoInfo.getAvailableFormats().ToArray());
+
+                        var codecInfos = videoInfo.getAvailableCodecs();
+                        foreach (string codec in videoInfo.getAvailableCodecs())
+                        {
+                            string originalCodec = codec;
+                            string simplifiedCodec = simplifyCodecName(codec);
+                            if (simplifiedCodec != null && !dropdownCodec.Items.Contains(simplifiedCodec))
+                            {
+                                dropdownCodec.Items.Add(simplifiedCodec);
+                                codecNames.Add(simplifiedCodec, originalCodec);
+                            }
+                        }
+
+                        if (dropdownQuality.Items.Count > 0)
+                            dropdownQuality.SelectedIndex = 0;
+
+                        if (dropdownFormat.Items.Count > 0)
+                            dropdownFormat.SelectedIndex = 0;
+
+                        if (dropdownCodec.Items.Count > 0)
+                            dropdownCodec.SelectedIndex = 0;
+
+                        statusTitle.Text = videoInfo.Title;
+
+                        titleStrip.SetToolTip(statusTitle, videoInfo.Title);
+                        statusTitle.Tag = fetchedURL;
+                    }
+                    catch (Exception ex) { }
+                }
+            }
+        }
+
         private void OpenUrl(string url)
         {
             try
@@ -121,104 +222,7 @@ namespace yt_downloaders
                 e.SuppressKeyPress = true; // Prevent the ding sound on Enter key press
                 e.Handled = true; // Mark the event as handled
 
-                string url = inputURL.Text.Trim();
-                if (!string.IsNullOrEmpty(url))
-                {
-                    if (!url.StartsWith("https://www.youtube.com/"))
-                    {
-                        MessageBox.Show("Please input a valid YouTube link.", Text, MessageBoxButtons.OK);
-                    }
-                    else
-                    {
-                        try
-                        {
-                            // clear and reset controls before fetching
-                            fetchedURL = url;
-
-                            inputURL.Clear();
-                            dropdownQuality.Items.Clear();
-                            dropdownFormat.Items.Clear();
-                            dropdownCodec.Items.Clear();
-                            codecNames.Clear();
-
-                            string formattedURL = url.Trim().Replace("https://www.youtube.com/", string.Empty);
-                            Text = defaultTitle + " - fetching " + formattedURL;
-                            chkHighestAvailableSettings.Enabled = false;
-                            dropdownQuality.Enabled = false;
-                            dropdownFormat.Enabled = false;
-                            dropdownCodec.Enabled = false;
-                            statusVideoTitle.Visible = false;
-                            panelDownload.Visible = false;
-                            statusWaiting.Visible = true;
-
-                            statusWaiting.Text = "Fetching from URL, please wait";
-                            statusWaiting.BackColor = Color.Silver;
-
-                            youTubeManager _manager = new youTubeManager();
-                            var videoInfo = await _manager.getVideoInfo(url);
-                            if (videoInfo == null)
-                            {
-                                MessageBox.Show("Invalid link provided, please try another one.", Text, MessageBoxButtons.OK);
-                                inputURL.Text = fetchedURL; // restore the input URL if it errors out
-                                return;
-                            }
-
-                            // fetch success
-
-                            Text = defaultTitle + " - previewing " + formattedURL;
-                            chkHighestAvailableSettings.Enabled = true;
-
-                            if (chkHighestAvailableSettings.Checked)
-                            {
-                                dropdownQuality.Enabled = false;
-                                dropdownFormat.Enabled = false;
-                                dropdownCodec.Enabled = false;
-                            }
-                            else
-                            {
-                                dropdownQuality.Enabled = true;
-                                dropdownFormat.Enabled = true;
-                                dropdownCodec.Enabled = true;
-                            }
-
-                            statusVideoTitle.Visible = true;
-                            panelDownload.Visible = true;
-
-                            statusWaiting.Text = "Fetch success, waiting to download";
-                            statusWaiting.BackColor = Color.Silver;
-
-                            dropdownQuality.Items.AddRange(videoInfo.getAvailableResolutions().ToArray());
-                            dropdownFormat.Items.AddRange(videoInfo.getAvailableFormats().ToArray());
-
-                            var codecInfos = videoInfo.getAvailableCodecs();
-                            foreach (string codec in videoInfo.getAvailableCodecs())
-                            {
-                                string originalCodec = codec;
-                                string simplifiedCodec = simplifyCodecName(codec);
-                                if (simplifiedCodec != null && !dropdownCodec.Items.Contains(simplifiedCodec))
-                                {
-                                    dropdownCodec.Items.Add(simplifiedCodec);
-                                    codecNames.Add(simplifiedCodec, originalCodec);
-                                }
-                            }
-
-                            if (dropdownQuality.Items.Count > 0)
-                                dropdownQuality.SelectedIndex = 0;
-
-                            if (dropdownFormat.Items.Count > 0)
-                                dropdownFormat.SelectedIndex = 0;
-
-                            if (dropdownCodec.Items.Count > 0)
-                                dropdownCodec.SelectedIndex = 0;
-
-                            statusTitle.Text = videoInfo.Title;
-
-                            titleStrip.SetToolTip(statusTitle, videoInfo.Title);
-                            statusTitle.Tag = fetchedURL;
-                        }
-                        catch (Exception ex){}
-                    }
-                }
+                previewFetch(inputURL.Text);
             }
         }
 
@@ -364,6 +368,15 @@ namespace yt_downloaders
                     Process.Start("explorer.exe", downloadsPath);
                 }
                 catch (Exception ex){}
+            }
+
+            if (chkCloseAppOnFinish.Checked)
+            {
+                Application.Exit();
+            }
+            else
+            {
+                Text = defaultTitle;
             }
         }
 
